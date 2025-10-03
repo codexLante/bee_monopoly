@@ -1,24 +1,24 @@
 "use client"
 
 import { useEffect } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import axios from "axios" // Import at top for better perf
 
 export default function AuthCallback() {
-  const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const { setUser } = useAuth()
 
   useEffect(() => {
-    const accessToken = searchParams.get("access_token")
-    const refreshToken = searchParams.get("refresh_token")
+    // Native way to grab URL params—no hook needed!
+    const urlParams = new URLSearchParams(window.location.search)
+    const accessToken = urlParams.get("access_token")
+    const refreshToken = urlParams.get("refresh_token")
 
     if (accessToken && refreshToken) {
+      // Store tokens
       localStorage.setItem("accessToken", accessToken)
       localStorage.setItem("refreshToken", refreshToken)
 
-      // Set axios default header for future requests
-      const axios = require("axios")
+      // Set axios default header
       axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`
 
       // Fetch user info and update context
@@ -26,15 +26,21 @@ export default function AuthCallback() {
         .get("/api/auth/me")
         .then((response) => {
           setUser(response.data)
-          navigate("/dashboard")
+          // Simple redirect—no navigate hook
+          window.location.href = "/dashboard"
         })
-        .catch(() => {
-          navigate("/login")
+        .catch((error) => {
+          console.error("Auth fetch failed:", error)
+          window.location.href = "/login"
         })
     } else {
-      navigate("/login")
+      // No tokens? Redirect
+      window.location.href = "/login"
     }
-  }, [searchParams, navigate, setUser])
+
+    // Optional: Clean up URL (remove params after processing)
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }, [setUser]) // Only depend on setUser—params are static on mount
 
   return (
     <div

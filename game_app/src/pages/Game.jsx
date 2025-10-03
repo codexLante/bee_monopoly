@@ -11,17 +11,21 @@ import "./Game.css"
 export default function Game() {
   const { gameId } = useParams()
   const navigate = useNavigate()
-  const { loadGame, updateGameState, saveGame, currentGame } = useGame()
+  const { loadGame, currentGame } = useGame()
   const [gameState, setGameState] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // This is what allows players to resume from where they left off
   useEffect(() => {
     const fetchGame = async () => {
       try {
+        // Load the complete game state from the database
         const game = await loadGame(gameId)
+        // Set the local state with the loaded game
+        // This includes all player positions, money, properties, and the board state
         setGameState(game.state)
       } catch (error) {
-        console.error("[v0] Failed to load game:", error)
+        console.error("Failed to load game:", error)
         alert("Failed to load game")
         navigate("/dashboard")
       } finally {
@@ -32,26 +36,19 @@ export default function Game() {
     fetchGame()
   }, [gameId])
 
-  const handleStateChange = async (newState) => {
+  /**
+   * Updates the game state both locally and in the database
+   * This ensures progress is saved automatically after every action
+   */
+  const handleStateChange = (newState) => {
+    // Update local state immediately for responsive UI
     setGameState(newState)
-    try {
-      await updateGameState(gameId, newState)
-    } catch (error) {
-      console.error("[v0] Failed to update game state:", error)
-    }
-  }
-
-  const handleSaveGame = async () => {
-    try {
-      await saveGame(gameId, gameState)
-      alert("Game saved successfully!")
-    } catch (error) {
-      console.error("[v0] Failed to save game:", error)
-      alert("Failed to save game")
-    }
+    // The state is automatically saved to the database by the DiceControls component
+    // after each move, so players can always resume from their last action
   }
 
   const handleBackToDashboard = () => {
+    // Game state is already saved, safe to navigate away
     navigate("/dashboard")
   }
 
@@ -75,9 +72,10 @@ export default function Game() {
           ← Back to Dashboard
         </button>
         <h1>Monopoly Game</h1>
-        <button onClick={handleSaveGame} className="btn-save">
-          Save Game
-        </button>
+        <div className="game-info">
+          <span>Turn: {gameState.turn}</span>
+          <span>Players: {gameState.players.length}</span>
+        </div>
       </div>
 
       <div className="game-content">

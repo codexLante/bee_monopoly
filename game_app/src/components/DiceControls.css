@@ -77,3 +77,123 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Added AI player indicator styles */
+.ai-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #e3f2fd;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+/* Added jail badge styling */
+.jail-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #ffebee;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #c62828;
+}
+
+.ai-thinking {
+  color: #667eea;
+  font-style: italic;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Added game messages styling */
+.game-messages {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 0.5rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.message {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+/* Added buy property prompt styling */
+.buy-property-prompt {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #e8f5e9;
+  border-radius: 0.5rem;
+  border: 2px solid #4caf50;
+}
+
+.buy-property-prompt p {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.buy-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.btn-buy,
+.btn-decline {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-buy {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-buy:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+}
+
+.btn-decline {
+  background: #f44336;
+  color: white;
+}
+
+.btn-decline:hover {
+  background: #da190b;
+  transform: translateY(-2px);
+}
+
+/* Added human badge styling */
+.human-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #e8f5e9;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #2e7d32;
+}
+
+.current-turn {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}

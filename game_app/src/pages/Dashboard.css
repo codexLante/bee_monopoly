@@ -149,6 +149,13 @@
   margin: 0.5rem 0;
 }
 
+/* Added styling for last played timestamp */
+.last-played {
+  font-size: 0.875rem;
+  color: #999;
+  font-style: italic;
+}
+
 .game-card-actions {
   display: flex;
   gap: 0.75rem;
@@ -180,4 +187,142 @@
 
 .btn-delete:hover {
   background: #ffebee;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+  color: #333;
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+}
+
+.modal-body {
+  margin-bottom: 1.5rem;
+}
+
+.modal-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.modal-body select {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.modal-body select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* Added styles for player name inputs */
+.player-names-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 0.5rem;
+}
+
+.player-names-section p {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #555;
+}
+
+.player-name-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.player-name-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.player-name-input:last-child {
+  margin-bottom: 0;
+}
+
+/* Added help text styling for persistence message */
+.help-text {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  border-radius: 0.25rem;
+  color: #1565c0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel,
+.btn-create {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.btn-cancel:hover {
+  background: #e0e0e0;
+}
+
+.btn-create {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-create:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-create:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

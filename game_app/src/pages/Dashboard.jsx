@@ -8,8 +8,12 @@ import "./Dashboard.css"
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
-  const { games, createGame, fetchMyGames, resumeGame, deleteGame } = useGame()
+  const { games, createGame, fetchMyGames, deleteGame } = useGame()
   const [loading, setLoading] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [numHumans, setNumHumans] = useState(1)
+  const [numComputers, setNumComputers] = useState(0)
+  const [playerNames, setPlayerNames] = useState([user?.username || "Player 1"])
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -19,24 +23,19 @@ export default function Dashboard() {
   const handleCreateGame = async () => {
     setLoading(true)
     try {
-      const result = await createGame(user.username)
+      const result = await createGame(playerNames, numHumans, numComputers)
       navigate(`/game/${result.game_id}`)
+      setShowCreateModal(false)
     } catch (error) {
-      console.error("[v0] Failed to create game:", error)
+      console.error("Failed to create game:", error)
       alert("Failed to create game")
     } finally {
       setLoading(false)
     }
   }
 
-  const handleResumeGame = async (gameId) => {
-    try {
-      await resumeGame(gameId)
-      navigate(`/game/${gameId}`)
-    } catch (error) {
-      console.error("[v0] Failed to resume game:", error)
-      alert("Failed to resume game")
-    }
+  const handleResumeGame = (gameId) => {
+    navigate(`/game/${gameId}`)
   }
 
   const handleDeleteGame = async (gameId) => {
@@ -44,10 +43,42 @@ export default function Dashboard() {
       try {
         await deleteGame(gameId)
       } catch (error) {
-        console.error("[v0] Failed to delete game:", error)
+        console.error("Failed to delete game:", error)
         alert("Failed to delete game")
       }
     }
+  }
+
+  const handleNumHumansChange = (num) => {
+    setNumHumans(num)
+    const newNames = []
+    for (let i = 0; i < num; i++) {
+      if (i === 0) {
+        newNames.push(user?.username || "Player 1")
+      } else {
+        newNames.push(playerNames[i] || `Player ${i + 1}`)
+      }
+    }
+    setPlayerNames(newNames)
+  }
+
+  const handlePlayerNameChange = (index, name) => {
+    const newNames = [...playerNames]
+    newNames[index] = name
+    setPlayerNames(newNames)
+  }
+
+  const formatLastPlayed = (updatedAt) => {
+    const date = new Date(updatedAt)
+    const now = new Date()
+    const diffMs = now - date
+    const diffMins = Math.floor(diffMs / 60000)
+
+    if (diffMins < 60) return `${diffMins} minutes ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours} hours ago`
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays} days ago`
   }
 
   return (
@@ -64,8 +95,8 @@ export default function Dashboard() {
 
       <div className="dashboard-content">
         <div className="create-game-section">
-          <button onClick={handleCreateGame} disabled={loading} className="btn-create-game">
-            {loading ? "Creating..." : "+ New Game"}
+          <button onClick={() => setShowCreateModal(true)} className="btn-create-game">
+            + New Game
           </button>
         </div>
 
@@ -78,16 +109,17 @@ export default function Dashboard() {
               {games.map((game) => (
                 <div key={game.id} className="game-card">
                   <div className="game-card-header">
-                    <h3>Game #{game.id.split("_")[1]}</h3>
+                    <h3>Game #{game.id}</h3>
                     <span className={`status-badge ${game.status}`}>{game.status}</span>
                   </div>
                   <div className="game-card-body">
-                    <p>Players: {game.players.length}</p>
-                    <p>Turn: {game.state.turn}</p>
+                    <p>Players: {game.players?.length || 0}</p>
+                    <p>Turn: {game.state?.turn || 1}</p>
+                    <p className="last-played">Last played: {formatLastPlayed(game.updated_at)}</p>
                   </div>
                   <div className="game-card-actions">
                     <button onClick={() => handleResumeGame(game.id)} className="btn-resume">
-                      {game.status === "active" ? "Continue" : "Resume"}
+                      Resume Game
                     </button>
                     <button onClick={() => handleDeleteGame(game.id)} className="btn-delete">
                       Delete
@@ -99,6 +131,69 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Create New Game</h2>
+            <div className="modal-body">
+              <label>
+                Number of Human Players:
+                <select value={numHumans} onChange={(e) => handleNumHumansChange(Number(e.target.value))}>
+                  <option value={1}>1 Player</option>
+                  <option value={2}>2 Players</option>
+                  <option value={3}>3 Players</option>
+                  <option value={4}>4 Players</option>
+                </select>
+              </label>
+
+              {numHumans > 1 && (
+                <div className="player-names-section">
+                  <p>Player Names:</p>
+                  {playerNames.map((name, index) => (
+                    <input
+                      key={index}
+                      type="text"
+                      value={name}
+                      onChange={(e) => handlePlayerNameChange(index, e.target.value)}
+                      placeholder={`Player ${index + 1} name`}
+                      className="player-name-input"
+                    />
+                  ))}
+                </div>
+              )}
+
+              <label>
+                Number of Computer Opponents:
+                <select
+                  value={numComputers}
+                  onChange={(e) => setNumComputers(Number(e.target.value))}
+                  disabled={numHumans >= 4}
+                >
+                  <option value={0}>0 Computers</option>
+                  {numHumans < 4 && <option value={1}>1 Computer</option>}
+                  {numHumans < 3 && <option value={2}>2 Computers</option>}
+                  {numHumans < 2 && <option value={3}>3 Computers</option>}
+                </select>
+              </label>
+
+              <p className="help-text">
+                {numHumans > 1
+                  ? "Multiple players can play on the same device, taking turns!"
+                  : "Your game progress is automatically saved. You can resume anytime from the dashboard!"}
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowCreateModal(false)} className="btn-cancel">
+                Cancel
+              </button>
+              <button onClick={handleCreateGame} disabled={loading} className="btn-create">
+                {loading ? "Creating..." : "Create Game"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
