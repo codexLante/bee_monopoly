@@ -1,0 +1,19 @@
+# Flask web framework
+Flask==3.0.0
+
+# Allow frontend to connect to backend
+flask-cors==4.0.0
+
+# JWT authentication (login tokens)
+flask-jwt-extended==4.6.0
+
+# Load environment variables from .env file
+python-dotenv==1.0.0
+
+# Database ORM
+flask-sqlalchemy==3.1.1
+
+# OAuth for social login
+authlib==1.3.0
+
+sqlalchemy-serializer==1.4.1

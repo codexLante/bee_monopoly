@@ -1,0 +1,98 @@
+.player-info-container {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.player-info-container h2 {
+  color: #333;
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.player-card {
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.player-card.active {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.player-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.player-details h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.125rem;
+}
+
+.current-turn {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.player-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.stat-value {
+  color: #333;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.jail-status {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 0.25rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
