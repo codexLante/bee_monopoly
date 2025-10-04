@@ -3,8 +3,8 @@ from flask_jwt_extended import (
     jwt_required, get_jwt_identity, get_jwt, create_access_token, create_refresh_token
 )
 from datetime import datetime
-from ai_player import MonopolyAI
-from game_logic import BOARD_SPACES, handle_landing, can_build_house, handle_jail, check_winner
+from flask_backend.app.ai_player import MonopolyAI
+from flask_backend.app.game_logic import BOARD_SPACES, handle_landing, can_build_house, handle_jail, check_winner
 
 routes = Blueprint('routes', __name__)
 logged_out_tokens = set()

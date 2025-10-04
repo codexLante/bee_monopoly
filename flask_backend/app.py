@@ -5,8 +5,6 @@ from flask_jwt_extended import JWTManager
 
 # from routes import routes, logged_out_tokens
 
-app = create_app()
-
 # from auth_social import auth_social_bp
 from dotenv import load_dotenv
 import os
@@ -45,4 +43,5 @@ app = Flask(__name__)
 
 # ------------------ Run Server ------------------
 if __name__ == '__main__':
+    app=create_app()
     app.run(debug=True, port=5000)

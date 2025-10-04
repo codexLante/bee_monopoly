@@ -19,13 +19,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Get tokens from browser storage
-  const getAccessToken = () => localStorage.getItem("accessToken")
-  const getRefreshToken = () => localStorage.getItem("refreshToken")
+  // Get token from browser storage (matching your backend's expected key)
+  const getToken = () => localStorage.getItem("jwt")
 
-  axios.defaults.baseURL = "http://localhost:5000"
+  // Set up axios defaults
+  axios.defaults.baseURL = "http://127.0.0.1:5000"
+  
+  // Add token to all requests automatically
   axios.interceptors.request.use((config) => {
-    const token = getAccessToken()
+    const token = getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -35,30 +37,16 @@ export const AuthProvider = ({ children }) => {
   // Check if user is logged in when app loads
   useEffect(() => {
     const checkAuth = async () => {
-      const token = getAccessToken()
+      const token = getToken()
       if (token) {
         try {
-          const response = await axios.get("/api/auth/me")
+          // Your backend endpoint: /api/user/get_user
+          const response = await axios.get("/user/get_user")
           setUser(response.data)
         } catch (error) {
-          // Token expired, try to refresh
-          const refreshToken = getRefreshToken()
-          if (refreshToken) {
-            try {
-              const res = await axios.post(
-                "/api/auth/refresh",
-                {},
-                {
-                  headers: { Authorization: `Bearer ${refreshToken}` },
-                },
-              )
-              localStorage.setItem("accessToken", res.data.access_token)
-              const userRes = await axios.get("/api/auth/me")
-              setUser(userRes.data)
-            } catch {
-              logout()
-            }
-          }
+          console.error("Auth check failed:", error)
+          // Token is invalid or expired
+          logout()
         }
       }
       setLoading(false)
@@ -66,45 +54,59 @@ export const AuthProvider = ({ children }) => {
     checkAuth()
   }, [])
 
-  // Login function
+  // Login function - matches your backend response structure
   const login = async (email, password) => {
-    const response = await axios.post("/api/auth/login", { email, password })
-    const { access_token, refresh_token, user } = response.data
+    const response = await axios.post("/user/login", { email, password })
+    const { token, user } = response.data
 
-    localStorage.setItem("accessToken", access_token)
-    localStorage.setItem("refreshToken", refresh_token)
+    // Store token with the key your backend expects
+    localStorage.setItem("jwt", token)
     setUser(user)
 
     return user
   }
 
-  // Register function
+  // Register function - auto-login after registration
   const register = async (username, email, password) => {
-    const response = await axios.post("/api/auth/register", { username, email, password })
-    const { access_token, refresh_token, user } = response.data
-
-    localStorage.setItem("accessToken", access_token)
-    localStorage.setItem("refreshToken", refresh_token)
+    // First register
+    const registerResponse = await axios.post("/user/register", { 
+      username, 
+      email, 
+      password 
+    })
+    
+    // Then automatically login
+    const loginResponse = await axios.post("/user/login", { 
+      email, 
+      password 
+    })
+    
+    const { token, user } = loginResponse.data
+    localStorage.setItem("jwt", token)
     setUser(user)
 
     return user
   }
 
-  // Logout function
-  const logout = async () => {
-    try {
-      await axios.post("/api/auth/logout")
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
-
+  // Logout function - client-side only (your backend has no logout endpoint)
+  const logout = () => {
     setUser(null)
-    localStorage.removeItem("accessToken")
-    localStorage.removeItem("refreshToken")
+    localStorage.removeItem("jwt")
+    // If you have other stored data, clear it too
+    // localStorage.clear() // Use this to clear everything
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        loading, 
+        login, 
+        register, 
+        logout, 
+        isAuthenticated: !!user 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
