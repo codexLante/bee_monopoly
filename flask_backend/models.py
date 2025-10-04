@@ -1,15 +1,17 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime
 
 # Initialize the database object
 db = SQLAlchemy()
+migrate = Migrate()
 
 # This allows multiple players to be in multiple games
-game_players = db.Table('game_players',
-    db.Column('game_id', db.Integer, db.ForeignKey('game.id'), primary_key=True),
-    db.Column('player_id', db.Integer, db.ForeignKey('player.id'), primary_key=True)
-)
+# game_players = db.Table('game_players',
+#     db.Column('game_id', db.Integer, db.ForeignKey('game.id'), primary_key=True),
+#     db.Column('player_id', db.Integer, db.ForeignKey('player.id'), primary_key=True)
+# )
 
 class User(db.Model, SerializerMixin):
     """
@@ -27,8 +29,9 @@ class User(db.Model, SerializerMixin):
     auth_provider = db.Column(db.String(50), nullable=True)
     google_id = db.Column(db.String(255), nullable=True)
     github_id = db.Column(db.String(255), nullable=True)
+
     # One user can own many games
-    games = db.relationship('Game', backref='owner', lazy=True)
+    # games = db.relationship('Game', backref='owner', lazy=True)
 
 class Player(db.Model, SerializerMixin):
     """
@@ -47,7 +50,7 @@ class Player(db.Model, SerializerMixin):
     is_computer = db.Column(db.Boolean, default=False)  # True if this is an AI player
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     # Many-to-many: one player can be in multiple games
-    games = db.relationship('Game', secondary=game_players, back_populates='players')
+    # games = db.relationship('Game', secondary=game_players, back_populates='players')
 
 class Game(db.Model, SerializerMixin):
     """
@@ -65,5 +68,6 @@ class Game(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     # This helps track when the game was last played
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    player_id=db.Column(db.Integer, db.ForeignKey('player.id'), nullable=True)
     # Many-to-many: one game can have multiple players
-    players = db.relationship('Player', secondary=game_players, back_populates='games')
+    # players = db.relationship('Player', secondary=game_players, back_populates='games')

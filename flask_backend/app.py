@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from models import db
+from models import *
 from routes import routes, logged_out_tokens
 from auth_social import auth_social_bp
 from dotenv import load_dotenv
@@ -17,13 +17,14 @@ app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "change-this-secret-key")
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 3600  # seconds
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = 30 * 24 * 3600  # 30 days
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///monopoly.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # ------------------ Extensions ------------------
 CORS(app)
 jwt = JWTManager(app)
 db.init_app(app)
+migrate.init_app(app, db)
 
 # ------------------ Create DB tables ------------------
 with app.app_context():
