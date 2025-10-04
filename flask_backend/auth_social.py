@@ -1,7 +1,7 @@
 from flask import Blueprint, redirect, jsonify
 from authlib.integrations.flask_client import OAuth
 from flask_jwt_extended import create_access_token, create_refresh_token
-from models import db, User
+# from models import db, User
 import os
 
 auth_social_bp = Blueprint('auth_social', __name__)

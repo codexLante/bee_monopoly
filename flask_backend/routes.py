@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
     jwt_required, get_jwt_identity, get_jwt, create_access_token, create_refresh_token
 )
-from models import db, User, Game, Player
 from datetime import datetime
 from ai_player import MonopolyAI
 from game_logic import BOARD_SPACES, handle_landing, can_build_house, handle_jail, check_winner
@@ -23,68 +22,6 @@ BOARD_POSITIONS = {
 }
 
 # ------------------ AUTH ------------------
-@routes.route('/api/auth/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    username, email, password = data.get('username'), data.get('email'), data.get('password')
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({'error': 'User already exists'}), 409
-
-    user = User(username=username, email=email, password=password)
-    db.session.add(user)
-    db.session.commit()
-
-    access_token = create_access_token(identity=email)
-    refresh_token = create_refresh_token(identity=email)
-    return jsonify({
-        'access_token': access_token,
-        'refresh_token': refresh_token,
-        'user': user.to_dict(only=('id', 'username', 'email'))
-    }), 201
-
-
-@routes.route('/api/auth/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email, password = data.get('email'), data.get('password')
-    user = User.query.filter_by(email=email).first()
-
-    if not user or user.password != password:
-        return jsonify({'error': 'Wrong email or password'}), 401
-
-    access_token = create_access_token(identity=email)
-    refresh_token = create_refresh_token(identity=email)
-    return jsonify({
-        'access_token': access_token,
-        'refresh_token': refresh_token,
-        'user': {'username': user.username, 'email': user.email}
-    }), 200
-
-
-@routes.route('/api/auth/refresh', methods=['POST'])
-@jwt_required(refresh=True)
-def refresh():
-    email = get_jwt_identity()
-    new_token = create_access_token(identity=email)
-    return jsonify({'access_token': new_token}), 200
-
-
-@routes.route('/api/auth/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    token_id = get_jwt()['jti']
-    logged_out_tokens.add(token_id)
-    return jsonify({'message': 'Logged out'}), 200
-
-
-@routes.route('/api/auth/me', methods=['GET'])
-@jwt_required()
-def get_user():
-    email = get_jwt_identity()
-    user = User.query.filter_by(email=email).first()
-    return jsonify(user.to_dict(only=('id', 'username', 'email'))), 200
-
 
 # ------------------ GAMES ------------------
 @routes.route('/api/game/create', methods=['POST'])
@@ -376,7 +313,6 @@ def build_property(game_id):
         'message': f"{player['name']} built a {building_type} on {property_name}",
         'state': game.state
     }), 200
-
 
 @routes.route('/api/game/<int:game_id>/ai-action', methods=['POST'])
 @jwt_required()

@@ -11,18 +11,30 @@ import "./Game.css"
 export default function Game() {
   const { gameId } = useParams()
   const navigate = useNavigate()
-  const { loadGame, currentGame } = useGame()
+  const { currentGame } = useGame()
   const [gameState, setGameState] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // This is what allows players to resume from where they left off
   useEffect(() => {
     const fetchGame = async () => {
       try {
-        // Load the complete game state from the database
-        const game = await loadGame(gameId)
-        // Set the local state with the loaded game
-        // This includes all player positions, money, properties, and the board state
+        const token = localStorage.getItem("jwt")
+        const response = await axios.post(
+          "http://127.0.0.1:5000/api/game/create",
+          {
+            numHumanPlayers: 1,
+            numComputerPlayers: 1,
+            playerNames: ["You"],
+            playerColors: ["red", "blue"]
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        )
+        const game = response.data.game
         setGameState(game.state)
       } catch (error) {
         console.error("Failed to load game:", error)
@@ -34,23 +46,93 @@ export default function Game() {
     }
 
     fetchGame()
-  }, [gameId])
+  }, [])
 
-  /**
-   * Updates the game state both locally and in the database
-   * This ensures progress is saved automatically after every action
-   */
   const handleStateChange = (newState) => {
-    // Update local state immediately for responsive UI
     setGameState(newState)
-    // The state is automatically saved to the database by the DiceControls component
-    // after each move, so players can always resume from their last action
   }
 
   const handleBackToDashboard = () => {
-    // Game state is already saved, safe to navigate away
     navigate("/dashboard")
   }
+
+  // ------------------ ROUTE CALLS ------------------
+
+  const movePlayer = async (playerId, dice) => {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(
+      `http://127.0.0.1:5000/api/game/${gameId}/move`,
+      { player_id: playerId, dice },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    )
+    const { state, messages, actions } = response.data
+    console.log("Move messages:", messages)
+    handleStateChange(state)
+  }
+
+  const buyProperty = async (playerId, propertyName) => {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(
+      `http://127.0.0.1:5000/api/game/${gameId}/buy`,
+      { player_id: playerId, property: propertyName },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    )
+    const { state, message } = response.data
+    console.log(message)
+    handleStateChange(state)
+  }
+
+  const buildProperty = async (playerId, propertyName) => {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(
+      `http://127.0.0.1:5000/api/game/${gameId}/build`,
+      { player_id: playerId, property: propertyName },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    )
+    const { state, message } = response.data
+    console.log(message)
+    handleStateChange(state)
+  }
+
+  const triggerAIAction = async (playerId, actionType, propertyName = null) => {
+    const token = localStorage.getItem("jwt")
+    const payload = {
+      player_id: playerId,
+      action: actionType
+    }
+    if (propertyName) {
+      payload.property = propertyName
+    }
+
+    const response = await axios.post(
+      `http://127.0.0.1:5000/api/game/${gameId}/ai-action`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    )
+    console.log("AI action result:", response.data)
+  }
+
+  // ------------------ UI ------------------
 
   if (loading) {
     return (
@@ -80,12 +162,22 @@ export default function Game() {
 
       <div className="game-content">
         <div className="game-sidebar">
-          <PlayerInfo players={gameState.players} currentPlayer={gameState.currentPlayer} />
+          <PlayerInfo
+            players={gameState.players}
+            currentPlayer={gameState.currentPlayer}
+            onBuy={buyProperty}
+            onBuild={buildProperty}
+            onAIAction={triggerAIAction}
+          />
         </div>
 
         <div className="game-main">
           <MonopolyBoard gameState={gameState} />
-          <DiceControls gameState={gameState} onStateChange={handleStateChange} />
+          <DiceControls
+            gameState={gameState}
+            onStateChange={handleStateChange}
+            onMove={movePlayer}
+          />
         </div>
       </div>
     </div>
