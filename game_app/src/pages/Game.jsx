@@ -27,6 +27,7 @@ export default function Game() {
           const response = await axios.get(`http://127.0.0.1:5000/game/${gameId}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
+          console.log("Initial game load response:", response.data)
           setGameState(response.data.state)
         } else {
           const gamesResponse = await axios.get(`http://127.0.0.1:5000/game/my-games`, {
@@ -80,51 +81,69 @@ export default function Game() {
 
   // ------------------ API ROUTES ------------------
 
-  const movePlayer = async (playerId, dice) => {
-    try {
-      const token = localStorage.getItem("jwt")
-      const response = await axios.post(
-        `http://127.0.0.1:5000/game/${gameId}/move`,
-        { player_id: playerId, dice },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-      const { state, messages: apiMessages, actions } = response.data
-      apiMessages.forEach(addMessage)
-      handleStateChange(state)
-      return { state, actions }
-    } catch (error) {
-      console.error("Move failed:", error)
-      alert(error.response?.data?.error || "Move failed")
-      throw error
-    }
+const movePlayer = async (playerId, dice) => {
+  try {
+    const token = localStorage.getItem("jwt")
+    console.log("=== BEFORE MOVE ===")
+    console.log("Current gameState:", JSON.stringify(gameState, null, 2))
+    
+    const response = await axios.post(
+      `http://127.0.0.1:5000/game/${gameId}/move`,
+      { player_id: playerId, dice },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    )
+    
+    console.log("=== BACKEND RESPONSE ===")
+    console.log("Full response:", JSON.stringify(response.data, null, 2))
+    
+    const { state, messages: apiMessages, actions } = response.data
+    
+    console.log("=== EXTRACTED STATE ===")
+    console.log("State turn:", state.turn)
+    console.log("State currentPlayer:", state.currentPlayer)
+    console.log("State players:", state.players.map(p => `${p.name} at position ${p.position}`))
+    
+    apiMessages.forEach(addMessage)
+    handleStateChange(state)
+    
+    console.log("=== AFTER setState ===")
+    console.log("Updated gameState:", JSON.stringify(gameState, null, 2))
+    
+    return { state, actions }
+  } catch (error) {
+    console.error("Move failed:", error)
+    alert(error.response?.data?.error || "Move failed")
+    throw error
   }
-
-  const buyProperty = async (playerId, propertyName) => {
-    try {
-      const token = localStorage.getItem("jwt")
-      const response = await axios.post(
-        `http://127.0.0.1:5000/game/${gameId}/buy`,
-        { player_id: playerId, property: propertyName },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-      const { state, message } = response.data
-      addMessage(message)
-      handleStateChange(state)
-    } catch (error) {
-      console.error("Buy failed:", error)
-      alert(error.response?.data?.error || "Purchase failed")
-    }
+}
+const buyProperty = async (playerId, propertyName) => {
+  try {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(
+      `http://127.0.0.1:5000/game/${gameId}/buy`,
+      { player_id: playerId, property: propertyName },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    )
+    const { state, message } = response.data
+    addMessage(message)
+    setGameState(state) // ✅ directly update gameState
+    return state // ✅ return updated state so DiceControls can continue
+  } catch (error) {
+    console.error("Buy failed:", error)
+    alert(error.response?.data?.error || "Purchase failed")
+    return null
   }
+}
 
   const buildProperty = async (playerId, propertyName) => {
     try {
@@ -230,6 +249,7 @@ export default function Game() {
             gameState={gameState}
             onStateChange={handleStateChange}
             onMove={movePlayer}
+            onBuy={buyProperty}
           />
         </div>
       </div>

@@ -1,5 +1,3 @@
-"use client"
-
 import "./PlayerInfo.css"
 
 export default function PlayerInfo({ players, currentPlayer }) {
@@ -24,14 +22,28 @@ export default function PlayerInfo({ players, currentPlayer }) {
             </div>
             <div className="stat">
               <span className="stat-label">Properties</span>
-              <span className="stat-value">{player.properties.length}</span>
+              <span className="stat-value">{player.properties?.length || 0}</span>
             </div>
             <div className="stat">
               <span className="stat-label">Position</span>
               <span className="stat-value">{player.position}</span>
             </div>
           </div>
-          {player.inJail && <div className="jail-status">In Jail ({player.jailTurns} turns)</div>}
+          
+          {player.properties && player.properties.length > 0 && (
+            <div className="player-properties">
+              <h4>Owned Properties:</h4>
+              <ul className="properties-list">
+                {player.properties.map((prop, i) => (
+                  <li key={i} className="property-item">{prop}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {player.in_jail && (
+            <div className="jail-status">In Jail ({player.jail_turns || 0} turns)</div>
+          )}
         </div>
       ))}
     </div>

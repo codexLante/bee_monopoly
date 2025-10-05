@@ -22,8 +22,8 @@ export default function Dashboard() {
 
   const fetchUserGames = async () => {
     try {
-      const token = localStorage.getItem("token")
-      const res = await axios.get("http://127.0.0.1:5000/user/games", {
+      const token = localStorage.getItem("jwt")
+      const res = await axios.get("http://127.0.0.1:5000/game/my-games", {
         headers: { Authorization: `Bearer ${token}` },
       })
       setGames(res.data.games)
@@ -35,7 +35,7 @@ export default function Dashboard() {
   const handleCreateGame = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("jwt")
       const res = await axios.post(
         "http://127.0.0.1:5000/game/create",
         {
@@ -64,7 +64,7 @@ export default function Dashboard() {
   const handleDeleteGame = async (gameId) => {
     if (window.confirm("Are you sure you want to delete this game?")) {
       try {
-        const token = localStorage.getItem("token")
+        const token = localStorage.getItem("jwt")
         await axios.delete(`http://127.0.0.1:5000/game/${gameId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
