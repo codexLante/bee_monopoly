@@ -26,10 +26,6 @@ game_bp = Blueprint("game",__name__)
 @game_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_game():
-    """
-    Creates a new Monopoly game with human and/or computer players
-    The game state is automatically saved to the database
-    """
     email = get_jwt_identity()
     user = User.query.filter_by(email=email).first()
     data = request.get_json()
@@ -39,7 +35,6 @@ def create_game():
     player_names = data.get('playerNames', [user.username])
     player_colors = data.get('playerColors', ['red', 'blue', 'green', 'yellow'])
 
-    # Create human players
     players_list = []
     for i in range(num_human_players):
         player_name = player_names[i] if i < len(player_names) else f"Player {i+1}"
@@ -49,18 +44,7 @@ def create_game():
         db.session.flush()
         players_list.append(player)
 
-    # Properties have prices and can be owned, other spaces are just positions
-    board = {}
-    for pos in range(40):
-        name = BOARD_POSITIONS.get(pos, f"Space {pos}")
-        if "Avenue" in name or "Railroad" in name or name in ["Electric Company", "Water Works", "Boardwalk", "Park Place"]:
-            board[name] = {"price": 60 + pos*10, "owner": None, "houses": 0, "position": pos}
-        else:
-            board[name] = {"position": pos}
-
-    # Create computer players if requested
     computer_colors = ['purple', 'orange', 'pink', 'brown']
-    
     for i in range(min(num_computer_players, 3)):
         color_index = (num_human_players + i) % len(computer_colors)
         computer_player = Player(
@@ -72,20 +56,37 @@ def create_game():
         db.session.flush()
         players_list.append(computer_player)
 
-    # This entire state object is saved to the database and can be loaded later
+    board = {}
+    from app.game.game_logic import BOARD_SPACES
+    for position, space_info in BOARD_SPACES.items():
+        space_name = space_info['name']
+        space_type = space_info.get('type')
+        if space_type in ['property', 'railroad', 'utility']:
+            board[space_name] = {
+                'position': position,
+                'price': space_info.get('price', 0),
+                'owner': None,
+                'houses': 0,
+                'type': space_type
+            }
+        else:
+            board[space_name] = {
+                'position': position,
+                'type': space_type
+            }
+
     initial_state = {
-        'currentPlayer': 0,  # Index of whose turn it is
-        'players': [p.to_dict() for p in players_list],  # All player data
-        'turn': 1,  # Current turn number
-        'board': board  # All board spaces and their properties
+        'currentPlayer': 0,
+        'players': [p.to_dict() for p in players_list],  # ✅ Now includes is_computer
+        'turn': 1,
+        'board': board
     }
 
-    # Create and save the game
     game = Game(state=initial_state, owner=user)
     for p in players_list:
         game.players.append(p)
     db.session.add(game)
-    db.session.commit()  # This saves the game to the database
+    db.session.commit()
     
     return jsonify({'game_id': game.id, 'game': game.to_dict()}), 201
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import "./DiceControls.css"
 
-export default function DiceControls({ gameState, onStateChange, onMove }) {
+export default function DiceControls({ gameState, onStateChange, onMove, onBuy }) {
   const [dice, setDice] = useState([0, 0])
   const [rolling, setRolling] = useState(false)
   const [messages, setMessages] = useState([])
@@ -12,46 +12,50 @@ export default function DiceControls({ gameState, onStateChange, onMove }) {
   const currentPlayer = gameState.players[gameState.currentPlayer]
 
   useEffect(() => {
-    if (currentPlayer?.is_computer && !rolling) {
+    if (currentPlayer?.is_computer && !rolling && !canBuyProperty) {
       const timer = setTimeout(() => {
         rollDice()
       }, 1500)
       return () => clearTimeout(timer)
     }
-  }, [currentPlayer, rolling])
+  }, [currentPlayer, rolling, canBuyProperty])
 
   const rollDice = async () => {
     setRolling(true)
     setMessages([])
     setCanBuyProperty(null)
 
-    // Animate dice rolling
     const interval = setInterval(() => {
-      setDice([Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1])
+      setDice([
+        Math.floor(Math.random() * 6) + 1,
+        Math.floor(Math.random() * 6) + 1,
+      ])
     }, 100)
 
     setTimeout(async () => {
       clearInterval(interval)
-      const finalDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1]
+      const finalDice = [
+        Math.floor(Math.random() * 6) + 1,
+        Math.floor(Math.random() * 6) + 1,
+      ]
       setDice(finalDice)
 
       try {
-        console.log("Rolling dice for player:", currentPlayer.id, "Dice:", finalDice)
-        
-        // Use the onMove prop from Game.jsx which handles state updates
         const response = await onMove(currentPlayer.id, finalDice)
-        
-        console.log("Move response in DiceControls:", response)
+        const { state, actions } = response
 
-        // The state is already updated in Game.jsx through handleStateChange
-        // We just need to handle the messages and actions here
-        if (response.actions?.can_buy) {
-          setCanBuyProperty(response.actions.can_buy)
+        if (actions?.can_buy) {
+          setCanBuyProperty(actions.can_buy)
 
-          // AI automatically buys if it wants to
           if (currentPlayer.is_computer) {
-            setTimeout(() => handleBuyProperty(), 1000)
+            setTimeout(async () => {
+              const updatedState = await onBuy(currentPlayer.id, actions.can_buy.property)
+              if (updatedState) onStateChange(updatedState)
+              setCanBuyProperty(null)
+            }, 1000)
           }
+        } else {
+          onStateChange(state)
         }
       } catch (error) {
         console.error("Dice roll error:", error)
@@ -64,19 +68,17 @@ export default function DiceControls({ gameState, onStateChange, onMove }) {
 
   const handleBuyProperty = async () => {
     if (!canBuyProperty) return
-
-    try {
-      // This should be passed as a prop from Game.jsx too
-      // For now we'll keep it empty, but you should pass onBuy prop
-      setMessages([...messages, `Buying ${canBuyProperty.property}...`])
+    const updatedState = await onBuy(currentPlayer.id, canBuyProperty.property)
+    if (updatedState) {
+      onStateChange(updatedState)
       setCanBuyProperty(null)
-    } catch (error) {
-      setMessages([...messages, `Error: ${error.message}`])
+      setTimeout(() => rollDice(), 1000) // ✅ advance turn
     }
   }
 
-  const handleDeclineBuy = () => {
+  const handleDeclineBuy = async () => {
     setCanBuyProperty(null)
+    setTimeout(() => rollDice(), 1000) // ✅ advance turn
   }
 
   return (
@@ -89,34 +91,37 @@ export default function DiceControls({ gameState, onStateChange, onMove }) {
       <div className="controls-info">
         <p className="current-turn">
           <strong>{currentPlayer.name}'s Turn</strong>
-          {currentPlayer.is_computer && <span className="ai-badge">🤖 AI</span>}
-          {!currentPlayer.is_computer && <span className="human-badge">👤 Human</span>}
+          {currentPlayer.is_computer ? (
+            <span className="ai-badge">🤖 AI</span>
+          ) : (
+            <span className="human-badge">👤 Human</span>
+          )}
           {currentPlayer.in_jail && <span className="jail-badge">🔒 In Jail</span>}
         </p>
+
         {dice[0] > 0 && <p>Last Roll: {dice[0] + dice[1]}</p>}
 
         {messages.length > 0 && (
           <div className="game-messages">
             {messages.map((msg, i) => (
-              <p key={i} className="message">
-                {msg}
-              </p>
+              <p key={i} className="message">{msg}</p>
             ))}
           </div>
         )}
 
+          {/* ✅ DEBUG LOG */}
+          {console.log("Buy prompt check:", {
+            canBuyProperty,
+            isComputer: currentPlayer?.is_computer,
+            currentPlayer
+          })}
+
         {canBuyProperty && !currentPlayer.is_computer && (
           <div className="buy-property-prompt">
-            <p>
-              Buy {canBuyProperty.property} for ${canBuyProperty.price}?
-            </p>
+            <p>Buy {canBuyProperty.property} for ${canBuyProperty.price}?</p>
             <div className="buy-buttons">
-              <button onClick={handleBuyProperty} className="btn-buy">
-                Buy
-              </button>
-              <button onClick={handleDeclineBuy} className="btn-decline">
-                Pass
-              </button>
+              <button onClick={handleBuyProperty} className="btn-buy">Buy</button>
+              <button onClick={handleDeclineBuy} className="btn-decline">Pass</button>
             </div>
           </div>
         )}
@@ -127,7 +132,11 @@ export default function DiceControls({ gameState, onStateChange, onMove }) {
         disabled={rolling || currentPlayer.is_computer || canBuyProperty !== null}
         className="btn-roll"
       >
-        {rolling ? "Rolling..." : currentPlayer.is_computer ? "AI Playing..." : "Roll Dice"}
+        {rolling
+          ? "Rolling..."
+          : currentPlayer.is_computer
+          ? "AI Playing..."
+          : "Roll Dice"}
       </button>
     </div>
   )

@@ -17,3 +17,17 @@ class Player(db.Model, SerializerMixin):
 
     # Many-to-many: one player can be in multiple games
     games = db.relationship('Game', secondary='game_player', back_populates='players')
+
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'color': self.color,
+            'money': 1500,
+            'position': 0,
+            'is_computer': self.is_computer,  # ✅ This is the fix
+            'properties': [],
+            'in_jail': False,
+            'jail_turns': 0
+        }

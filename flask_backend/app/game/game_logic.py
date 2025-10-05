@@ -50,31 +50,25 @@ BOARD_SPACES = {
 
 def handle_landing(player, position, game_state):
     """
-    Handles what happens when a player lands on a space
-    Returns: (messages, actions_needed)
+    Handles what happens when a player lands on a space.
+    Returns: (messages, actions)
     - messages: list of strings describing what happened
-    - actions_needed: dict with actions the player can take
+    - actions: dict with actions the player can take (e.g., can_buy, bankrupt)
     """
     space = BOARD_SPACES.get(position)
     if not space:
         return (["Landed on unknown space"], {})
-    
+
     messages = [f"{player['name']} landed on {space['name']}"]
     actions = {}
-    
+
     space_type = space.get('type')
-    
-    # Handle different types of spaces
-    if space_type == 'go':
-        # Already handled by passing Go
-        messages.append("Collect $200 for landing on Go!")
-        player['money'] += 200
-        
-    elif space_type == 'property' or space_type == 'railroad' or space_type == 'utility':
-        # Check if property is owned
-        property_data = game_state['board'].get(space['name'])
+
+    # Ensure board entry exists
+    board = game_state['board']
+    if space_type in ['property', 'railroad', 'utility']:
+        property_data = board.get(space['name'])
         if not property_data:
-            # Initialize property if it doesn't exist
             property_data = {
                 'position': position,
                 'price': space['price'],
@@ -82,10 +76,9 @@ def handle_landing(player, position, game_state):
                 'houses': 0,
                 'type': space_type
             }
-            game_state['board'][space['name']] = property_data
-        
+            board[space['name']] = property_data
+
         if property_data['owner'] is None:
-            # Property is available for purchase
             if player['money'] >= space['price']:
                 actions['can_buy'] = {
                     'property': space['name'],
@@ -94,24 +87,23 @@ def handle_landing(player, position, game_state):
                 messages.append(f"You can buy {space['name']} for ${space['price']}")
             else:
                 messages.append(f"{space['name']} costs ${space['price']} but you only have ${player['money']}")
-        
         elif property_data['owner'] != player['id']:
-            # Property is owned by someone else - pay rent
             rent = calculate_rent(space, property_data, game_state)
             owner = next((p for p in game_state['players'] if p['id'] == property_data['owner']), None)
-            
             if owner:
                 if player['money'] >= rent:
                     player['money'] -= rent
                     owner['money'] += rent
                     messages.append(f"Paid ${rent} rent to {owner['name']}")
                 else:
-                    # Player can't afford rent - bankruptcy
                     messages.append(f"Cannot afford ${rent} rent! Bankrupt!")
                     actions['bankrupt'] = True
-    
+
+    elif space_type == 'go':
+        player['money'] += 200
+        messages.append("Collect $200 for landing on Go!")
+
     elif space_type == 'tax':
-        # Pay tax
         tax_amount = space['amount']
         if player['money'] >= tax_amount:
             player['money'] -= tax_amount
@@ -119,30 +111,25 @@ def handle_landing(player, position, game_state):
         else:
             messages.append(f"Cannot afford ${tax_amount} tax! Bankrupt!")
             actions['bankrupt'] = True
-    
+
     elif space_type == 'go_to_jail':
-        # Send player to jail
         player['position'] = 10  # Jail position
         player['in_jail'] = True
         player['jail_turns'] = 0
         messages.append("Go directly to Jail! Do not pass Go, do not collect $200")
-    
+
     elif space_type == 'jail':
-        # Just visiting jail, nothing happens
         messages.append("Just visiting jail")
-    
+
     elif space_type == 'free_parking':
-        # Free parking - nothing happens
         messages.append("Resting at Free Parking")
-    
-    elif space_type == 'chance' or space_type == 'community_chest':
-        # Simplified - just give some money
+
+    elif space_type in ['chance', 'community_chest']:
         bonus = 50
         player['money'] += bonus
         messages.append(f"Drew a card! Received ${bonus}")
-    
-    return (messages, actions)
 
+    return messages, actions
 
 def calculate_rent(space, property_data, game_state):
     """
