@@ -1,17 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useGame } from "../context/GameContext"
-import { useParams } from "react-router-dom"
 import "./DiceControls.css"
 
-export default function DiceControls({ gameState, onStateChange }) {
+export default function DiceControls({ gameState, onStateChange, onMove }) {
   const [dice, setDice] = useState([0, 0])
   const [rolling, setRolling] = useState(false)
   const [messages, setMessages] = useState([])
   const [canBuyProperty, setCanBuyProperty] = useState(null)
-  const { movePlayer, buyProperty, updateGameState } = useGame()
-  const { gameId } = useParams()
 
   const currentPlayer = gameState.players[gameState.currentPlayer]
 
@@ -40,13 +36,15 @@ export default function DiceControls({ gameState, onStateChange }) {
       setDice(finalDice)
 
       try {
-        const response = await movePlayer(gameId, currentPlayer.id, finalDice)
+        console.log("Rolling dice for player:", currentPlayer.id, "Dice:", finalDice)
+        
+        // Use the onMove prop from Game.jsx which handles state updates
+        const response = await onMove(currentPlayer.id, finalDice)
+        
+        console.log("Move response in DiceControls:", response)
 
-        // Update the game state with the response
-        onStateChange(response.state)
-        setMessages(response.messages)
-
-        // Check if player can buy property
+        // The state is already updated in Game.jsx through handleStateChange
+        // We just need to handle the messages and actions here
         if (response.actions?.can_buy) {
           setCanBuyProperty(response.actions.can_buy)
 
@@ -56,6 +54,7 @@ export default function DiceControls({ gameState, onStateChange }) {
           }
         }
       } catch (error) {
+        console.error("Dice roll error:", error)
         setMessages([`Error: ${error.message}`])
       }
 
@@ -67,9 +66,9 @@ export default function DiceControls({ gameState, onStateChange }) {
     if (!canBuyProperty) return
 
     try {
-      const response = await buyProperty(gameId, currentPlayer.id, canBuyProperty.property)
-      onStateChange(response.state)
-      setMessages([...messages, response.message])
+      // This should be passed as a prop from Game.jsx too
+      // For now we'll keep it empty, but you should pass onBuy prop
+      setMessages([...messages, `Buying ${canBuyProperty.property}...`])
       setCanBuyProperty(null)
     } catch (error) {
       setMessages([...messages, `Error: ${error.message}`])

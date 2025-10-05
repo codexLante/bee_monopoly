@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { useGame } from "../context/GameContext"
+import axios from "axios"
 import "./Dashboard.css"
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
-  const { games, createGame, fetchMyGames, deleteGame } = useGame()
+  const [games, setGames] = useState([])
   const [loading, setLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [numHumans, setNumHumans] = useState(1)
@@ -17,14 +17,37 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchMyGames()
+    fetchUserGames()
   }, [])
+
+  const fetchUserGames = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      const res = await axios.get("http://127.0.0.1:5000/user/games", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setGames(res.data.games)
+    } catch (error) {
+      console.error("Failed to fetch games:", error)
+    }
+  }
 
   const handleCreateGame = async () => {
     setLoading(true)
     try {
-      const result = await createGame(playerNames, numHumans, numComputers)
-      navigate(`/game/${result.game_id}`)
+      const token = localStorage.getItem("token")
+      const res = await axios.post(
+        "http://127.0.0.1:5000/game/create",
+        {
+          playerNames,
+          numHumanPlayers: numHumans,
+          numComputerPlayers: numComputers,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      navigate(`/game/${res.data.game_id}`)
       setShowCreateModal(false)
     } catch (error) {
       console.error("Failed to create game:", error)
@@ -41,7 +64,11 @@ export default function Dashboard() {
   const handleDeleteGame = async (gameId) => {
     if (window.confirm("Are you sure you want to delete this game?")) {
       try {
-        await deleteGame(gameId)
+        const token = localStorage.getItem("token")
+        await axios.delete(`http://127.0.0.1:5000/game/${gameId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        setGames((prev) => prev.filter((g) => g.id !== gameId))
       } catch (error) {
         console.error("Failed to delete game:", error)
         alert("Failed to delete game")
@@ -147,7 +174,7 @@ export default function Dashboard() {
                 </select>
               </label>
 
-              {numHumans > 1 && (
+              {numHumans > 0 && (
                 <div className="player-names-section">
                   <p>Player Names:</p>
                   {playerNames.map((name, index) => (

@@ -17,105 +17,98 @@ export const GameProvider = ({ children }) => {
   const [currentGame, setCurrentGame] = useState(null)
   const [games, setGames] = useState([])
 
-  /**
-   * Creates a new game with human and/or computer players
-   * The game is automatically saved to the database
-   */
   const createGame = async (playerNames, numHumanPlayers = 1, numComputerPlayers = 0) => {
-    const response = await axios.post("/api/game/create", {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post("http://127.0.0.1:5000/game/create", {
       playerNames,
       numHumanPlayers,
       numComputerPlayers,
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
     })
     setCurrentGame(response.data.game)
     return response.data
   }
 
-  /**
-   * Loads a saved game from the database
-   * This allows players to resume where they left off
-   */
   const loadGame = async (gameId) => {
-    const response = await axios.get(`/api/game/${gameId}`)
+    const token = localStorage.getItem("jwt")
+    const response = await axios.get(`http://127.0.0.1:5000/game/${gameId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     setCurrentGame(response.data)
     return response.data
   }
 
-  /**
-   * Updates the game state in the database
-   * Called after every action to save progress automatically
-   */
   const updateGameState = async (gameId, state) => {
-    const response = await axios.put(`/api/game/${gameId}/state`, { state })
+    const token = localStorage.getItem("jwt")
+    const response = await axios.put(`http://127.0.0.1:5000/game/${gameId}/state`, { state }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     setCurrentGame(response.data.game)
     return response.data
   }
 
-  /**
-   * Deletes a game from the database
-   */
   const deleteGame = async (gameId) => {
-    await axios.delete(`/api/game/${gameId}`)
+    const token = localStorage.getItem("jwt")
+    await axios.delete(`http://127.0.0.1:5000/game/${gameId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     setGames(games.filter((g) => g.id !== gameId))
   }
 
-  /**
-   * Fetches all games owned by the current user
-   * Shows both active and finished games
-   */
   const fetchMyGames = async () => {
-    const response = await axios.get("/api/game/my-games")
+    const token = localStorage.getItem("jwt")
+    const response = await axios.get("http://127.0.0.1:5000/game/my-games", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     setGames(response.data.games)
     return response.data.games
   }
 
-  /**
-   * Moves a player on the board
-   * The game state is automatically saved after the move
-   */
   const movePlayer = async (gameId, playerId, dice) => {
-    const response = await axios.post(`/api/game/${gameId}/move`, {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(`http://127.0.0.1:5000/game/${gameId}/move`, {
       player_id: playerId,
       dice: dice,
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
     })
     setCurrentGame((prev) => ({ ...prev, state: response.data.state }))
     return response.data
   }
 
-  /**
-   * Buys a property for a player
-   * The game state is automatically saved after purchase
-   */
   const buyProperty = async (gameId, playerId, propertyName) => {
-    const response = await axios.post(`/api/game/${gameId}/buy`, {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(`http://127.0.0.1:5000/game/${gameId}/buy`, {
       player_id: playerId,
       property: propertyName,
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
     })
     setCurrentGame((prev) => ({ ...prev, state: response.data.state }))
     return response.data
   }
 
-  /**
-   * Builds a house or hotel on a property
-   * The game state is automatically saved after building
-   */
   const buildOnProperty = async (gameId, playerId, propertyName) => {
-    const response = await axios.post(`/api/game/${gameId}/build`, {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(`http://127.0.0.1:5000/game/${gameId}/build`, {
       player_id: playerId,
       property: propertyName,
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
     })
     setCurrentGame((prev) => ({ ...prev, state: response.data.state }))
     return response.data
   }
 
-  /**
-   * Handles AI player actions (buying properties, building houses)
-   */
   const aiAction = async (gameId, playerId, action, property = null) => {
-    const response = await axios.post(`/api/game/${gameId}/ai-action`, {
+    const token = localStorage.getItem("jwt")
+    const response = await axios.post(`http://127.0.0.1:5000/game/${gameId}/ai-move`, {
       player_id: playerId,
       action: action,
       property: property,
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
     })
     return response.data
   }

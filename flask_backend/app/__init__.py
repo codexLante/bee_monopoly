@@ -29,7 +29,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-flask-secret-key')
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
-    app.register_blueprint(user_bp,url_prefix="/game")
+    app.register_blueprint(user_bp,url_prefix="/user")
     app.register_blueprint(game_bp,url_prefix="/game")
     app.register_blueprint(move_bp,url_prefix="/game")
     app.register_blueprint(house_bp,url_prefix="/game")
