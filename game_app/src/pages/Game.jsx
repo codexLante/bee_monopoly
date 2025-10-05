@@ -6,8 +6,6 @@ import PlayerInfo from "../components/PlayerInfo"
 import DiceControls from "../components/DiceControls"
 import "./Game.css"
 
-const API_URL = "http://127.0.0.1:5000/game"
-
 export default function Game() {
   const { gameId } = useParams()
   const navigate = useNavigate()
@@ -16,81 +14,77 @@ export default function Game() {
   const [messages, setMessages] = useState([])
 
   useEffect(() => {
-    const fetchGame = async () => {
+    const initializeGame = async () => {
       try {
         const token = localStorage.getItem("jwt")
-        
         if (!token) {
           alert("Please login first")
           navigate("/login")
           return
         }
 
-        // If gameId exists, load that game, otherwise create new one
         if (gameId) {
-          const response = await axios.get(`${API_URL}/${gameId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+          const response = await axios.get(`http://127.0.0.1:5000/game/${gameId}`, {
+            headers: { Authorization: `Bearer ${token}` },
           })
           setGameState(response.data.state)
         } else {
-          // Create new game
-          const response = await axios.post(
-            `${API_URL}/create`,
-            {
-              numHumanPlayers: 1,
-              numComputerPlayers: 1,
-              playerNames: ["You"],
-              playerColors: ["red", "blue"],
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
+          const gamesResponse = await axios.get(`http://127.0.0.1:5000/game/my-games`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          const activeGame = gamesResponse.data.games.find(g => !g.state?.winner)
+          if (activeGame) {
+            navigate(`/game/${activeGame.id}`, { replace: true })
+          } else {
+            const createResponse = await axios.post(
+              `http://127.0.0.1:5000/game/create`,
+              {
+                numHumanPlayers: 1,
+                numComputerPlayers: 1,
+                playerNames: ["You"],
+                playerColors: ["red", "blue"],
               },
-            }
-          )
-          const game = response.data.game
-          setGameState(game.state)
-          // Update URL with new game ID
-          navigate(`/game/${response.data.game_id}`, { replace: true })
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            )
+            const newGame = createResponse.data.game
+            setGameState(newGame.state)
+            navigate(`/game/${newGame.id}`, { replace: true })
+          }
         }
       } catch (error) {
-        console.error("Failed to load game:", error)
-        alert(error.response?.data?.error || "Failed to load game")
+        console.error("Game setup failed:", error)
+        alert(error.response?.data?.error || "Game setup failed")
         navigate("/dashboard")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchGame()
+    initializeGame()
   }, [gameId])
 
-  const handleStateChange = (newState) => {
-    setGameState(newState)
-  }
-
-  const handleBackToDashboard = () => {
-    navigate("/dashboard")
-  }
+  const handleStateChange = (newState) => setGameState(newState)
+  const handleBackToDashboard = () => navigate("/dashboard")
 
   const addMessage = (msg) => {
-    setMessages((prev) => [...prev, msg])
-    // Auto-clear after 5 seconds
+    setMessages(prev => [...prev, msg])
     setTimeout(() => {
-      setMessages((prev) => prev.slice(1))
+      setMessages(prev => prev.slice(1))
     }, 5000)
   }
 
-  // ------------------ ROUTE CALLS ------------------
+  // ------------------ API ROUTES ------------------
 
   const movePlayer = async (playerId, dice) => {
     try {
       const token = localStorage.getItem("jwt")
       const response = await axios.post(
-        `${API_URL}/${gameId}/move`,
+        `http://127.0.0.1:5000/game/${gameId}/move`,
         { player_id: playerId, dice },
         {
           headers: {
@@ -100,10 +94,7 @@ export default function Game() {
         }
       )
       const { state, messages: apiMessages, actions } = response.data
-      
-      // Show messages to user
-      apiMessages.forEach((msg) => addMessage(msg))
-      
+      apiMessages.forEach(addMessage)
       handleStateChange(state)
       return { state, actions }
     } catch (error) {
@@ -117,7 +108,7 @@ export default function Game() {
     try {
       const token = localStorage.getItem("jwt")
       const response = await axios.post(
-        `${API_URL}/${gameId}/buy`,
+        `http://127.0.0.1:5000/game/${gameId}/buy`,
         { player_id: playerId, property: propertyName },
         {
           headers: {
@@ -139,7 +130,7 @@ export default function Game() {
     try {
       const token = localStorage.getItem("jwt")
       const response = await axios.post(
-        `${API_URL}/${gameId}/build`,
+        `http://127.0.0.1:5000/game/${gameId}/build`,
         { player_id: playerId, property: propertyName },
         {
           headers: {
@@ -160,16 +151,11 @@ export default function Game() {
   const triggerAIAction = async (playerId, actionType, propertyName = null) => {
     try {
       const token = localStorage.getItem("jwt")
-      const payload = {
-        player_id: playerId,
-        action: actionType,
-      }
-      if (propertyName) {
-        payload.property = propertyName
-      }
+      const payload = { player_id: playerId, action: actionType }
+      if (propertyName) payload.property = propertyName
 
       const response = await axios.post(
-        `${API_URL}/${gameId}/ai-action`,
+        `http://127.0.0.1:5000/game/${gameId}/ai-move`,
         payload,
         {
           headers: {
@@ -178,12 +164,11 @@ export default function Game() {
           },
         }
       )
-      
+
       const result = response.data
-      if (result.action !== 'pass') {
-        addMessage(`AI ${result.action === 'buy' ? 'bought' : 'built on'} ${result.property}`)
-        // Refresh game state
-        const gameResponse = await axios.get(`${API_URL}/${gameId}`, {
+      if (result.action !== "pass") {
+        addMessage(`AI ${result.action === "buy" ? "bought" : "built on"} ${result.property}`)
+        const gameResponse = await axios.get(`http://127.0.0.1:5000/game/${gameId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         handleStateChange(gameResponse.data.state)
@@ -204,9 +189,7 @@ export default function Game() {
     )
   }
 
-  if (!gameState) {
-    return null
-  }
+  if (!gameState) return null
 
   return (
     <div className="game-container">
@@ -221,7 +204,6 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Message Display */}
       {messages.length > 0 && (
         <div className="game-messages">
           {messages.map((msg, index) => (
@@ -242,7 +224,6 @@ export default function Game() {
             onAIAction={triggerAIAction}
           />
         </div>
-
         <div className="game-main">
           <MonopolyBoard gameState={gameState} />
           <DiceControls

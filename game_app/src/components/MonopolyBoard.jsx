@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import "./MonopolyBoard.css"
 
 const BOARD_TILES = [
@@ -46,6 +47,11 @@ const BOARD_TILES = [
 ]
 
 export default function MonopolyBoard({ gameState }) {
+  useEffect(() => {
+    console.log("MonopolyBoard received gameState update:", gameState)
+    console.log("Player positions:", gameState.players.map(p => ({ name: p.name, position: p.position })))
+  }, [gameState])
+
   const renderTile = (tile, index) => {
     const playersOnTile = gameState.players.filter((p) => p.position === tile.id)
 

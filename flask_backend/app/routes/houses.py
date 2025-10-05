@@ -47,7 +47,7 @@ def build_property(game_id):
         'state': game.state
     }), 200
 
-@house_bp.route('/ai_move/<int:game_id>', methods=['POST'])
+@house_bp.route('/<int:game_id>/ai-move', methods=['POST'])
 @jwt_required()
 def ai_action(game_id):
     """Handle AI player actions"""
